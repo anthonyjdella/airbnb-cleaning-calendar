@@ -21,7 +21,7 @@ def main():
     try:
         service = build("calendar", "v3", credentials=creds)
 
-        now = datetime.datetime.utcnow().isoformat() + "Z"
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         print("Getting the upcoming 10 events")
         events_result = (
             service.events()
