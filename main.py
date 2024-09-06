@@ -11,6 +11,7 @@ SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 def get_credentials():
     creds_info = json.loads(os.getenv('GOOGLE_CREDENTIALS'))
+    print(creds_info)
     creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     return creds
 
