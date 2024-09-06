@@ -5,6 +5,10 @@ on:
     - cron: "0 0 * * *"  # Runs daily at midnight UTC
   workflow_dispatch:      # Allows manual triggering via GitHub UI
 
+  push:
+    branches:
+      - main  # Or
+
 jobs:
   schedule-cleaning:
     runs-on: ubuntu-latest
@@ -25,11 +29,5 @@ jobs:
 
     - name: Run Python script
       env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        TOKEN_JSON: ${{ secrets.TOKEN_JSON }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}  # Service account key JSON
       run: python main.py
-
-    # Store token.json securely without printing it in logs
-    - name: Update TOKEN_JSON secret
-      run: |
-        gh secret set TOKEN_JSON --body "$(cat token.json)" > /dev/null 2>&1
