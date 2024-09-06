@@ -1,35 +1,51 @@
 import datetime
 import os
-import json
 
-from google.oauth2.service_account import Credentials
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-
-def get_credentials():
-    creds_info = json.loads(os.getenv('GOOGLE_CREDENTIALS'))
-    print(creds_info)
-    creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
-    return creds
+BASE_DIR = "/Users/anthonyjdella/Desktop/Git-Projects/airbnb-cleaning-calendar"
+CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials.json")
+TOKEN_PATH = os.path.join(BASE_DIR, "token.json")
 
 
 def main():
-    creds = get_credentials()
+    creds = None
+
+    # Use the absolute path for token.json
+    if os.path.exists(TOKEN_PATH):
+        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            # Use the absolute path for credentials.json
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CREDENTIALS_PATH, SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+
+        # Save the token to the absolute path
+        with open(TOKEN_PATH, "w") as token:
+            token.write(creds.to_json())
 
     try:
         service = build("calendar", "v3", credentials=creds)
 
-        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        print("Getting the upcoming 10 events")
+        now = datetime.datetime.now().isoformat() + "Z"
+        print("Getting the upcoming 14 events")
         events_result = (
             service.events()
             .list(
-                calendarId="primary",
+                calendarId="quhmbdtvkdoniffo4avofrvcugjnn546@import.calendar.google.com",
                 timeMin=now,
-                maxResults=1,
+                maxResults=14,
                 singleEvents=True,
                 orderBy="startTime",
             )
@@ -71,15 +87,15 @@ def main():
             start_time = datetime.datetime.combine(
                 start_date, datetime.time(11, 0))
             end_time = datetime.datetime.combine(
-                start_date, datetime.time(16, 0))
+                start_date, datetime.time(13, 30))
 
             start_time_iso = start_time.isoformat()
             end_time_iso = end_time.isoformat()
 
             new_event = {
-                "summary": "Cleaning Time",
+                "summary": "Focus Time",
                 "location": "Rose Cliff House",
-                "description": "Guest is leaving, time to clean.",
+                "description": "Deep Work Session. Not Accepting Meetings.",
                 "colorId": 6,
                 "start": {
                     "dateTime": start_time_iso,
@@ -91,7 +107,7 @@ def main():
                 },
                 "attendees": [
                     {"email": "leeznon@gmail.com"},
-                    {"email": "rosecliffhouse@gmail.com"}
+                    {"email": "anhhoang.chu@databricks.com"}
                 ],
                 "reminders": {
                     "useDefault": False,
