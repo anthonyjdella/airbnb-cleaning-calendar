@@ -1,18 +1,24 @@
+import datetime
+import os
+import json
+
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import os
-import datetime
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
-SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_CREDENTIALS")
+
+
+def get_credentials():
+    creds_info = json.loads(os.getenv('GOOGLE_CREDENTIALS'))
+    creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+    return creds
 
 
 def main():
-    try:
-        creds = Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    creds = get_credentials()
 
+    try:
         service = build("calendar", "v3", credentials=creds)
 
         now = datetime.datetime.utcnow().isoformat() + "Z"
