@@ -29,15 +29,7 @@ jobs:
         TOKEN_JSON: ${{ secrets.TOKEN_JSON }}
       run: python main.py
 
-    - name: Store token.json as secret
-      if: success()
-      run: |
-        echo "::set-output name=TOKEN_JSON::$(cat token.json)"
-      id: store-token
-
+    # Store token.json securely without printing it in logs
     - name: Update TOKEN_JSON secret
-      uses: peter-evans/create-or-update-secret-action@v2
-      with:
-        secret: TOKEN_JSON
-        token: ${{ secrets.GITHUB_TOKEN }}
-        value: ${{ steps.store-token.outputs.TOKEN_JSON }}
+      run: |
+        gh secret set TOKEN_JSON --body "$(cat token.json)" > /dev/null 2>&1
