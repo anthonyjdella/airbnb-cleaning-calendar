@@ -1,5 +1,6 @@
 import datetime
-import os.path
+import os
+import json
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -10,28 +11,40 @@ from googleapiclient.errors import HttpError
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 
-def main():
+def get_credentials():
+    # Get credentials from GitHub secrets (as environment variable)
+    creds_data = os.getenv("GOOGLE_CREDENTIALS")
+    token_data = os.getenv("TOKEN_JSON")
+
     creds = None
 
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    if token_data:
+        creds = Credentials.from_authorized_user_info(
+            json.loads(token_data), SCOPES)
 
+    # If there are no (valid) credentials, refresh or log in
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "credentials.json", SCOPES
-            )
+            flow = InstalledAppFlow.from_client_config(
+                json.loads(creds_data), SCOPES)
             creds = flow.run_local_server(port=0)
 
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
+        # Save the token (for future runs, store as an artifact or GitHub Secret)
+        with open("token.json", "w") as token_file:
+            token_file.write(creds.to_json())
+
+    return creds
+
+
+def main():
+    creds = get_credentials()
 
     try:
         service = build("calendar", "v3", credentials=creds)
 
-        now = datetime.datetime.utcnow().isoformat() + "Z"
+        now = datetime.datetime.now().isoformat() + "Z"
         print("Getting the upcoming 10 events")
         events_result = (
             service.events()
@@ -52,10 +65,6 @@ def main():
 
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
-            end = event["end"].get("dateTime", event["end"].get("date"))
-            print(
-                f"Event starts at {start}, ends at {end}, summary: {event.get('summary')}")
-
             start_date = datetime.datetime.fromisoformat(start).date()
 
             # Check if a cleaning event already exists for the same day
@@ -82,20 +91,17 @@ def main():
             end_time = datetime.datetime.combine(
                 start_date, datetime.time(16, 0))
 
-            start_time_iso = start_time.isoformat()
-            end_time_iso = end_time.isoformat()
-
             new_event = {
                 "summary": "Cleaning Time",
                 "location": "Rose Cliff House",
                 "description": "Guest is leaving, time to clean.",
                 "colorId": 6,
                 "start": {
-                    "dateTime": start_time_iso,
+                    "dateTime": start_time.isoformat(),
                     "timeZone": "America/Los_Angeles"
                 },
                 "end": {
-                    "dateTime": end_time_iso,
+                    "dateTime": end_time.isoformat(),
                     "timeZone": "America/Los_Angeles"
                 },
                 "attendees": [
