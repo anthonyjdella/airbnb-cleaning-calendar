@@ -27,9 +27,9 @@ def main():
         events_result = (
             service.events()
             .list(
-                calendarId="quhmbdtvkdoniffo4avofrvcugjnn546@import.calendar.google.com",
+                calendarId="primary",
                 timeMin=now,
-                maxResults=10,
+                maxResults=1,
                 singleEvents=True,
                 orderBy="startTime",
             )
